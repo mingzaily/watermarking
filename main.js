@@ -2,17 +2,27 @@ var $ = function(sel) {
     return document.querySelector(sel);
 };
 
-var inputItems = ['text', 'color', 'alpha', 'angle', 'space', 'size'];
+var inputItems = ['text', 'color', 'alpha', 'angle', 'space', 'size', 'inline'];
 var input = {};
 
 var image = $('#image');
 var graph = $('#graph');
 var refresh = $('#refresh');
 var autoRefresh = $('#auto-refresh');
+var colorChip = $('#color-chip');
+var valueDisplays = {
+    color: $('#color-value'),
+    alpha: $('#alpha-value'),
+    angle: $('#angle-value'),
+    space: $('#space-value'),
+    size: $('#size-value'),
+    inline: $('#inline-value')
+};
 var file = null;
 var canvas = null;
 var textCtx = null;
 var repaint = null;
+var presetButtons = document.querySelectorAll('[data-color-preset]');
 
 var dataURItoBlob = function(dataURI) {
     var binStr = atob(dataURI.split(',')[1]);
@@ -46,6 +56,7 @@ var readFile = function() {
         var img = new Image();
         img.onload = function() {
             canvas = document.createElement('canvas');
+            canvas.className = 'mt-6 w-full cursor-pointer rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 p-3 shadow-inner transition hover:border-slate-400';
             canvas.width = img.width;
             canvas.height = img.height;
             textCtx = null;
@@ -90,9 +101,11 @@ var makeStyle = function() {
 
 var drawText = function() {
     if (!canvas) return;
+    if (!input.text.value) return;
     var textSize = input.size.value * Math.max(15, (Math.min(canvas.width, canvas.height) / 25));
     var centerX = canvas.width / 2;
     var centerY = canvas.height / 2;
+    var inlineSpacing = parseFloat(input.inline ? input.inline.value : 1);
 
     if (textCtx) {
         repaint();
@@ -109,7 +122,7 @@ var drawText = function() {
 
     var width = (textCtx.measureText(input.text.value)).width;
     var step = Math.sqrt(Math.pow(canvas.width, 2) + Math.pow(canvas.height, 2));
-    var margin = (textCtx.measureText('啊')).width;
+    var margin = inlineSpacing * (textCtx.measureText('啊')).width;
 
     var x = Math.ceil(step / (width + margin));
     var y = Math.ceil((step / (input.space.value * textSize)) / 2);
@@ -121,6 +134,40 @@ var drawText = function() {
     }
 
     textCtx.restore();
+};
+
+var setDisplayValue = function(key) {
+    var display = valueDisplays[key];
+    if (!display) return;
+    var value = input[key].value;
+
+    switch (key) {
+        case 'alpha':
+            display.textContent = Math.round(value * 100) + '%';
+            break;
+        case 'angle':
+            display.textContent = value + '°';
+            break;
+        case 'space':
+            display.textContent = parseFloat(value).toFixed(1) + '×';
+            break;
+        case 'size':
+            display.textContent = parseFloat(value).toFixed(1) + '×';
+            break;
+        case 'inline':
+            display.textContent = parseFloat(value).toFixed(1) + '×';
+            break;
+        case 'color':
+            var hex = value.toUpperCase();
+            if (hex.charAt(0) !== '#') hex = '#' + hex;
+            display.textContent = hex;
+            if (colorChip) {
+                colorChip.style.background = hex;
+            }
+            break;
+        default:
+            display.textContent = value;
+    }
 };
 
 image.addEventListener('change', function() {
@@ -136,6 +183,7 @@ image.addEventListener('change', function() {
 inputItems.forEach(function(item) {
     var el = $('#' + item);
     input[item] = el;
+    setDisplayValue(item);
 
     autoRefresh.addEventListener('change', function() {
         if (this.checked) {
@@ -146,8 +194,19 @@ inputItems.forEach(function(item) {
     });
 
     el.addEventListener('input', function() {
+        setDisplayValue(item);
         if (autoRefresh.checked) drawText();
     });
 
     refresh.addEventListener('click', drawText);
+});
+
+presetButtons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var colorValue = this.getAttribute('data-color-preset');
+        if (!input.color) return;
+        input.color.value = colorValue;
+        var event = new Event('input', { bubbles: true });
+        input.color.dispatchEvent(event);
+    });
 });
