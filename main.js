@@ -2,7 +2,7 @@ var $ = function(sel) {
     return document.querySelector(sel);
 };
 
-var inputItems = ['text', 'color', 'alpha', 'angle', 'space', 'size', 'inline'];
+var inputItems = ['text', 'color', 'alpha', 'angle', 'space', 'size', 'inline', 'weight'];
 var input = {};
 
 var image = $('#image');
@@ -16,7 +16,8 @@ var valueDisplays = {
     angle: $('#angle-value'),
     space: $('#space-value'),
     size: $('#size-value'),
-    inline: $('#inline-value')
+    inline: $('#inline-value'),
+    weight: $('#weight-value')
 };
 var file = null;
 var canvas = null;
@@ -189,6 +190,7 @@ var drawText = function() {
     if (!input.text.value) return;
     var textSize = input.size.value * Math.max(15, (Math.min(canvas.width, canvas.height) / 25));
     var inlineSpacing = parseFloat(input.inline ? input.inline.value : 1);
+    var fontWeight = input.weight ? input.weight.value : '700';
     var position = getPosition();
 
     if (textCtx) {
@@ -197,9 +199,11 @@ var drawText = function() {
         textCtx = canvas.getContext('2d');
     }
 
+    var fontStr = fontWeight + ' ' + textSize + 'px -apple-system,"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei",sans-serif';
+
     textCtx.save();
     textCtx.fillStyle = makeStyle();
-    textCtx.font = 'bold ' + textSize + 'px -apple-system,"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei",sans-serif';
+    textCtx.font = fontStr;
 
     var width = textCtx.measureText(input.text.value).width;
     var padding = textSize * 0.5;
@@ -221,7 +225,6 @@ var drawText = function() {
             }
         }
     } else {
-        textCtx.rotate(input.angle.value * Math.PI / 180);
         var tx, ty;
         switch (position) {
             case 'top-left':
@@ -240,9 +243,6 @@ var drawText = function() {
                 tx = (canvas.width - width) / 2; ty = (canvas.height + textSize) / 2;
                 break;
         }
-        textCtx.setTransform(1, 0, 0, 1, 0, 0);
-        textCtx.fillStyle = makeStyle();
-        textCtx.font = 'bold ' + textSize + 'px -apple-system,"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei",sans-serif';
         textCtx.fillText(input.text.value, tx, ty);
     }
 
@@ -269,6 +269,9 @@ var setDisplayValue = function(key) {
             break;
         case 'inline':
             display.textContent = parseFloat(value).toFixed(1) + '×';
+            break;
+        case 'weight':
+            display.textContent = value;
             break;
         case 'color':
             var hex = value.toUpperCase();
@@ -364,6 +367,8 @@ var updateControlsState = function() {
     });
     var colorCtrl = $('#color-control');
     if (colorCtrl) colorCtrl.classList.toggle('control-disabled', !isText);
+    var weightCtrl = $('#weight-control');
+    if (weightCtrl) weightCtrl.classList.toggle('control-disabled', !isText);
 };
 
 document.querySelectorAll('input[name="position"]').forEach(function(radio) {
@@ -415,7 +420,7 @@ $('#download').addEventListener('click', function() {
 });
 
 // 重置按钮
-var defaultValues = { text: '', color: '#7F7F7F', alpha: '0.5', angle: '45', space: '4', size: '1', inline: '1' };
+var defaultValues = { text: '', color: '#7F7F7F', alpha: '0.5', angle: '45', space: '4', size: '1', inline: '1', weight: '700' };
 $('#reset').addEventListener('click', function() {
     inputItems.forEach(function(item) {
         input[item].value = defaultValues[item];
